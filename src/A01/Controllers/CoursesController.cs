@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using A01.Models;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
 
 namespace A01.Controllers
 {
@@ -83,25 +85,99 @@ namespace A01.Controllers
                     return new ObjectResult(c);
                 }
             }
-            return NotFound();
+            return new NotFoundResult();
         }
 
         // POST api/courses
         [HttpPost]
-        public void Post([FromBody]string value)
+        public IActionResult AddCourse([FromBody]Course course)
         {
+            if (course == null)
+            {
+                return new BadRequestResult();
+            }
+            foreach (var c in _courses)
+            {
+                if (c.ID == course.ID)
+                {
+                    return new StatusCodeResult(409);
+                }
+            }
+            _courses.Add(course);
+            var location = Url.Link("GetCourseByID", new {id = course.ID});
+            return new CreatedResult(location, course);
         }
 
         // PUT api/courses/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody]string value)
+        [HttpPut]
+        [Route("{id}", Name = "UpdateCourse")]
+        public IActionResult UpdateCourse(int id, [FromBody]Course course)
         {
+            if (course == null)
+            {
+                return new BadRequestResult();
+            }
+            foreach (var c in _courses)
+            {
+                if (c.ID != id) continue;
+                c.Name = course.Name;
+                c.TemplateID = course.TemplateID;
+                c.StartDate = course.StartDate;
+                c.EndDate = course.EndDate;
+                c.ListOfStudents = course.ListOfStudents;
+                return new NoContentResult();
+            }
+            return new NotFoundResult();
         }
 
         // DELETE api/courses/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
+        [HttpDelete]
+        [Route("{id}", Name = "DeleteCourseWithID")]
+        public IActionResult DeleteCourseWithID(int id)
         {
+            foreach (var c in _courses)
+            {
+                if (c.ID != id) continue;
+                _courses.Remove(c);
+                return new NoContentResult();
+            }
+            return new NotFoundResult();
+        }
+
+        // GET api/courses/{id}/students
+        [HttpGet]
+        [Route("{id}/students", Name = "GetStudentsInCourse")]
+        public IActionResult GetStudentsInCourse(int id)
+        {
+            foreach (var c in _courses)
+            {
+                if (c.ID == id)
+                {
+                    return new ObjectResult(c.ListOfStudents);
+                }
+            }
+            return new NotFoundResult();
+        }
+
+        // POST api/courses/{id}/students
+        [HttpPost]
+        [Route("{id}/students", Name = "AddStudentToCourse")]
+        public IActionResult AddStudentToCourse(int id, [FromBody]Student student)
+        {
+            if (student == null)
+            {
+                return new BadRequestResult();
+            }
+            foreach (var c in _courses)
+            {
+                if (c.ID == id)
+                {
+                    c.ListOfStudents.Add(student);
+                    var location = Url.Link("GetStudentsInCourse", new { id = c.ID });
+                    return new CreatedResult(location, c);
+                }
+            }
+            return new NotFoundResult();
         }
     }
 }
