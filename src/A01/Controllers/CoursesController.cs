@@ -170,12 +170,10 @@ namespace A01.Controllers
             }
             foreach (var c in _courses)
             {
-                if (c.ID == id)
-                {
-                    c.ListOfStudents.Add(student);
-                    var location = Url.Link("GetStudentsInCourse", new { id = c.ID });
-                    return new CreatedResult(location, c);
-                }
+                if (c.ID != id) continue;
+                c.ListOfStudents.Add(student);
+                var location = Url.Link("GetStudentsInCourse", new { id = c.ID });
+                return new CreatedResult(location, c);
             }
             return new NotFoundResult();
         }
